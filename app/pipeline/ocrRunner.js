@@ -10,6 +10,10 @@ import { OUTPUT_DIR } from "../config/settings.js";
 export async function runOcr(filePath) {
   const text = await extractRawText(filePath);
 
+  console.log("==== EXTRACTED TEXT START ====");
+  console.log(text.slice(0, 2000));
+  console.log("==== EXTRACTED TEXT END ====");
+
   // Ensure output directory exists
   if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -28,3 +32,4 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
     .then((out) => console.log("OCR output saved to:", out))
     .catch(console.error);
 }
+

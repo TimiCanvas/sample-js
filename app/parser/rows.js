@@ -1,73 +1,56 @@
-/**
- * Parses the ROWS table from structured OCR TXT.
- * @param {string} text
- * @returns {Array<Object>}
- */
 export function parseRows(text) {
   const rows = [];
   const lines = text.split(/\r?\n/);
 
-  // Find ROWS section
-  const rowsIndex = lines.indexOf("ROWS:");
+  // 🔎 Find ROWS line robustly
+  const rowsIndex = lines.findIndex(
+    line => line.trim().toUpperCase() === "ROWS:"
+  );
+
   if (rowsIndex === -1) {
-    throw new Error("ROWS section not found");
+    // Helpful debug output
+    throw new Error(
+      "ROWS section not found. First 30 lines:\n" +
+      lines.slice(0, 30).join("\n")
+    );
   }
 
-  const headerLineIndex = rowsIndex + 1;
-  if (headerLineIndex >= lines.length) {
-    throw new Error("ROWS header line missing");
+  const headerLine = lines[rowsIndex + 1];
+  if (!headerLine) {
+    throw new Error("ROWS header row missing after ROWS:");
   }
 
-  // Parse column headers
-  const columns = lines[headerLineIndex]
-    .split("|")
-    .map(c => c.trim());
+  const columns = headerLine.split("|").map(c => c.trim());
 
   const expectedColumns = [
-    "S/N",
-    "Code",
-    "POL",
-    "B/L No",
-    "Shipper",
-    "Consignee",
-    "Notify",
-    "Year",
-    "Make/Model",
-    "Chassis",
-    "KGS",
-    "CBM",
-    "Remarks"
+    "S/N", "Code", "POL", "B/L No", "Shipper", "Consignee",
+    "Notify", "Year", "Make/Model", "Chassis", "KGS", "CBM", "Remarks"
   ];
 
-  // Validate schema strictly
   if (JSON.stringify(columns) !== JSON.stringify(expectedColumns)) {
-    throw new Error(`Unexpected columns: ${columns.join(", ")}`);
+    throw new Error(
+      `Unexpected columns:\n${columns.join(" | ")}`
+    );
   }
 
   // Parse data rows
-  for (let i = headerLineIndex + 1; i < lines.length; i++) {
+  for (let i = rowsIndex + 2; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
     const values = line.split("|").map(v => v.trim());
-
-    // Skip malformed rows safely
-    if (values.length !== columns.length) {
-      continue;
-    }
+    if (values.length !== columns.length) continue;
 
     const record = {};
-
     columns.forEach((col, idx) => {
-      const value = values[idx];
-      record[col] = value.toUpperCase() === "NULL" ? null : value;
+      record[col] = values[idx] === "NULL" ? null : values[idx];
     });
 
-    // Type casting
-    record["S/N"] = parseInt(record["S/N"], 10);
-    record["Year"] = record["Year"] !== null ? parseInt(record["Year"], 10) : null;
-    record["KGS"] = record["KGS"] !== null ? parseInt(record["KGS"], 10) : null;
-    record["CBM"] = record["CBM"] !== null ? parseFloat(record["CBM"]) : null;
+    // Type coercion
+    record["S/N"] = Number(record["S/N"]);
+    record["Year"] = record["Year"] ? Number(record["Year"]) : null;
+    record["KGS"] = record["KGS"] ? Number(record["KGS"]) : null;
+    record["CBM"] = record["CBM"] ? Number(record["CBM"]) : null;
 
     rows.push(record);
   }
