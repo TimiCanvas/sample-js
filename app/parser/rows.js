@@ -48,9 +48,9 @@ export function parseRows(text) {
 
     // Type coercion
     record["S/N"] = Number(record["S/N"]);
-    record["Year"] = record["Year"] ? Number(record["Year"]) : null;
+    record["Year"] = record["Year"]  ? record["Year"].replace(/,/g, "") : null;
     record["KGS"] = record["KGS"] ? Number(record["KGS"]) : null;
-    record["CBM"] = record["CBM"] ? Number(record["CBM"]) : null;
+    record["CBM"] = record["CBM"] ? record["CBM"] : null;
 
     rows.push(record);
   }
